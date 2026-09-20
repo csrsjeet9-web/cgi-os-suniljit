@@ -8,6 +8,7 @@ import { propose, proposeAndNotify, runAutopilot } from '@/lib/actions'
 import { SCHEDULED, type ProposalDraft } from '@/agents/registry'
 import { runRegulatoryWatch, watchSummary } from '@/agents/regwatch'
 import { runReport } from '@/agents/report'
+import { runSvp, svpQuietText } from '@/agents/svp'
 
 // 🔒 Don't edit — this keeps your robot safe.
 // THE weekday cron — 08:30 Malaysia time (vercel.json: "30 0 * * 1-5").
@@ -57,6 +58,10 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url)
   const force = url.searchParams.get('force') || ''     // "watch" | "report" — for testing
+  // ?only=svp|brief|sweep|watch|report — run ONE section. For testing a single
+  // robot without firing the whole morning. Still behind the same Bearer secret.
+  const only = url.searchParams.get('only') || ''
+  const run = (section: string) => !only || only === section
   const today = todayISO()
   const dow = new Date(today + 'T00:00:00Z').getUTCDay()
   const owner = process.env.OWNER_CHAT_ID?.trim() || ''
@@ -71,14 +76,17 @@ export async function GET(req: Request) {
     const { data } = await supabase.from('agent_actions').select('agent_key, payload').eq('status', 'proposed').gt('expires_at', new Date().toISOString())
     proposed = (data ?? []) as any[]
   }
-  const brief = buildBrief(rows, proposed, today)
   const to = recipients()
-  const sends = await Promise.allSettled(to.map(id => sendMessage(id, brief)))
-  const sent = sends.filter(r => r.status === 'fulfilled').length
+  let sent = 0
+  if (run('brief')) {
+    const brief = buildBrief(rows, proposed, today)
+    const sends = await Promise.allSettled(to.map(id => sendMessage(id, brief)))
+    sent = sends.filter(r => r.status === 'fulfilled').length
+  }
 
   // ② SWEEP the scheduled robots — CREATE proposals (🟡) or run graduated ones (🟢).
   let created = 0
-  for (const agent of SCHEDULED) {
+  for (const agent of (run('sweep') ? SCHEDULED : [])) {
     let drafts: ProposalDraft[] = []
     try {
       drafts = agent.check(rows, today)
@@ -102,9 +110,25 @@ export async function GET(req: Request) {
     }
   }
 
-  // ③ MONDAY — the Regulatory Watch. Proposals only; every one carries its source URL.
+  // ③ THE SVP — the department head's one recommendation for the day. Reads the
+  //    restricted register too, so the card goes only to the owner, never to a
+  //    team group. Recommend-only: it proposes, it never writes.
+  let svp: any = { ran: false }
+  if (owner && run('svp')) {
+    try {
+      const svpRows = await getRecords('restricted')
+      const r = await runSvp({ rows: svpRows, ownerChatId: owner })
+      svp = { ran: true, candidates: r.candidates.length, ref: r.candidates[0]?.ref ?? null, proposed: r.proposed, narrative: r.narrative, verified: r.verified }
+      if (!r.proposed) await sendMessage(owner, svpQuietText(r))
+    } catch (e: any) {
+      console.error('[CGI] svp failed:', e)
+      svp = { ran: false, error: String(e?.message || e).slice(0, 200) }
+    }
+  }
+
+  // ④ MONDAY — the Regulatory Watch. Proposals only; every one carries its source URL.
   let watch: any = { ran: false }
-  if (dow === 1 || force === 'watch') {
+  if (run('watch') && (dow === 1 || force === 'watch')) {
     try {
       const r = await runRegulatoryWatch({ rows, ownerChatId: owner })
       watch = { ran: r.ran, searched: r.searched, findings: r.findings.length, proposed: r.proposed.length, error: r.error }
@@ -115,9 +139,9 @@ export async function GET(req: Request) {
     }
   }
 
-  // ④ FIRST WORKING DAY — the management pack.
+  // ⑤ FIRST WORKING DAY — the management pack.
   let report = false
-  if (isFirstWorkingDay(today) || force === 'report') {
+  if (run('report') && (isFirstWorkingDay(today) || force === 'report')) {
     try {
       const text = await runReport(rows)
       await Promise.allSettled(to.map(id => sendMessage(id, text)))
@@ -127,7 +151,7 @@ export async function GET(req: Request) {
     }
   }
 
-  return Response.json({ ok: true, today, sent, recipients: to.length, needs_yes: proposed.length, proposals_created: created, watch, report })
+  return Response.json({ ok: true, today, only: only || 'all', sent, recipients: to.length, needs_yes: proposed.length, proposals_created: created, svp, watch, report })
 }
 
 // ------------------------------------------------------------

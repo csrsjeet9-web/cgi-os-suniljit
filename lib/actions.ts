@@ -142,6 +142,11 @@ export function summarizeResult(result: any): string {
   if (result.kind === 'record_created') {
     return `✅ Added ${result.category}: ${result.title}${result.record_id ? ` (#${result.record_id})` : ''}`
   }
+  if (result.kind === 'mcc_escalated') {
+    return `🏛️ ${result.ref} is marked for the Management Committee.` +
+      (result.decision_sought ? ` Decision sought: ${result.decision_sought}` : '') +
+      (result.record_id ? ` (#${result.record_id})` : '')
+  }
   if (result.kind === 'record_updated') {
     return `✅ ${result.ref || result.title} → <b>${result.status}</b> (was ${result.previous_status})${result.record_id ? ` · #${result.record_id}` : ''}`
   }
@@ -322,6 +327,17 @@ export async function undoAction(
       .eq('id', recordId)
     if (e) return { ok: false, message: 'Could not withdraw the row — try again.' }
     message = `↩️ Reversed #${actionId} — ${orig.ref || orig.title} is now Withdrawn. Nothing was deleted.`
+  } else if (res.kind === 'mcc_escalated') {
+    // The SVP only ever stamps `meta.mcc`. Undo lifts the stamp back off; the
+    // register's own fields were never touched, so there is nothing else to restore.
+    const meta = { ...(orig.meta || {}) }
+    delete (meta as any).mcc
+    const { error: e } = await supabase
+      .from('records')
+      .update({ meta, updated_at: nowISO() })
+      .eq('id', recordId)
+    if (e) return { ok: false, message: 'Could not lift the escalation — try again.' }
+    message = `↩️ Reversed #${actionId} — ${orig.ref || orig.title} is no longer marked as escalated to the MCC.`
   } else if (res.kind === 'record_updated' && res.previous_status) {
     const { error: e } = await supabase
       .from('records')

@@ -11,6 +11,7 @@ import { BOT_ACTION_TOOLS, ACTION_TOOL_NAMES, runBotAction } from '@/lib/bot-act
 import { SCHEDULED } from '@/agents/registry'
 import { runRegulatoryWatch, watchSummary } from '@/agents/regwatch'
 import { runReport } from '@/agents/report'
+import { runSvp, svpQuietText } from '@/agents/svp'
 import { atlasIdentity, atlasName } from '@/atlas/config'
 import { logRun } from '@/lib/runs'
 import { BOT_MODEL } from '@/lib/model'
@@ -49,7 +50,8 @@ const HELP_CARD = () =>
   `"log a lesson…", "move CO-002 to In Progress", "close PI-004", "add obligation…".\n` +
   `Small + reversible I just do (reply <code>/undo-&lt;id&gt;</code> to reverse). Anything at ` +
   `<b>${approvalLevel()}</b> or above, anything overdue, and every closure I propose — you tap ✅.\n\n` +
-  `🤖 Robots on demand: <code>/overdue-chaser</code> · <code>/nc-tracker</code> · <code>/regwatch</code> · <code>/report</code>\n` +
+  `🏛️ <b>/svp</b> — your department head: ONE item for the Management Committee, with the decision sought.\n` +
+  `🤖 Other robots: <code>/overdue-chaser</code> · <code>/nc-tracker</code> · <code>/regwatch</code> · <code>/report</code>\n` +
   `I never message an HOD, an auditor or a regulator. You do.`
 
 // Open this route in a browser to confirm your env is wired (reveals only WHETHER
@@ -209,6 +211,24 @@ async function handleMessage(msg: any): Promise<Response> {
       } catch (e) {
         console.error('[CGI] regwatch threw:', e)
         await sendMessage(chatId, '⚠️ The Regulatory Watch hit an error — it is logged, nothing was added.')
+      }
+    })
+    return Response.json({ ok: true })
+  }
+
+  // /svp — the department head, on demand. Reads everything this sender is
+  // cleared for, then sends ONE recommendation card with Approve/Reject.
+  if (/^\/svp/i.test(text)) {
+    await sendMessage(chatId, '🏛️ The <b>SVP</b> is reading the registers…')
+    after(async () => {
+      try {
+        const rows = await getRecords(telegramClearance(fromId))
+        const r = await runSvp({ rows, ownerChatId: String(chatId) })
+        if (!r.proposed) await sendMessage(chatId, svpQuietText(r))
+        if (r.error) console.warn('[CGI] svp narrative unavailable:', r.error)
+      } catch (e) {
+        console.error('[CGI] svp threw:', e)
+        await sendMessage(chatId, '⚠️ The SVP hit an error — it is logged, nothing was written.')
       }
     })
     return Response.json({ ok: true })

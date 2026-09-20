@@ -60,6 +60,14 @@ export const AGENTS: AgentMeta[] = [
       'Numbers are computed in code, the narrative by Claude. Read-only; it never asks and never writes.',
   },
   {
+    key: 'svp',
+    label: 'SVP — the department head',
+    emoji: '🏛️',
+    autonomyNote:
+      'Weekdays 08:30 (or /svp): reads every register it is cleared for, scores what is material, and hands you ONE item for the Management Committee — ref, owner, why now, and the decision sought. ' +
+      '🟡 Recommend-only: it writes nothing. Approving stamps that record as escalated; rejecting writes nothing at all.',
+  },
+  {
     key: 'atlas',
     label: 'Atlas (the Telegram bot)',
     emoji: '🤖',
@@ -156,7 +164,51 @@ async function draftOnly(agentKey: string, payload: any): Promise<any> {
   return result
 }
 
+// ---- stampEscalation: the SVP's ONLY write ---------------------------------
+// Approving an SVP recommendation marks that one record as escalated to the
+// Management Committee. It touches `meta` only — never the status, never the
+// owner, never a date — so approving cannot change what the register says is
+// true. `/undo` removes the stamp again (see undoAction in lib/actions.ts).
+async function stampEscalation(payload: any): Promise<any> {
+  if (!supabaseConfigured) throw new Error('Supabase not configured — cannot record this yet.')
+  const recordId = Number(payload?.record_id)
+  if (!Number.isFinite(recordId)) throw new Error('escalate needs a numeric record_id')
+
+  const { data: before } = await supabase.from('records').select('id, ref, title, meta').eq('id', recordId)
+  const orig = before?.[0]
+  if (!orig) throw new Error(`no record #${recordId} to escalate`)
+
+  const mcc = {
+    escalated_on: nowISO().slice(0, 10),
+    by: 'svp',
+    headline: payload?.headline || null,
+    why_now: payload?.why_now || null,
+    decision_sought: payload?.decision_sought || null,
+    risk_if_ignored: payload?.risk_if_ignored || null,
+    score: payload?.score ?? null,
+  }
+  const { data, error } = await supabase
+    .from('records')
+    .update({ meta: { ...(orig.meta || {}), mcc }, updated_at: nowISO() })
+    .eq('id', recordId)
+    .select()
+  if (error) throw new Error(`could not record the escalation: ${error.message}`)
+
+  const result = {
+    kind: 'mcc_escalated',
+    record_id: recordId,
+    ref: data?.[0]?.ref || orig.ref,
+    title: data?.[0]?.title || orig.title,
+    decision_sought: mcc.decision_sought,
+    had_previous_mcc: !!(orig.meta || {}).mcc,
+  }
+  await logRun('svp', 'ok', result)
+  return result
+}
+
 export const EXECUTORS: Record<string, Executor> = {
+  // The department head. Recommend-only: this is the one thing a YES can do.
+  'svp':              (p) => stampEscalation(p),
   // The scheduled robots.
   'overdue-chaser':   (p) => draftOnly('overdue-chaser', p),
   'nc-tracker':       (p) => writeRecord('nc-tracker', p),
