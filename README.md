@@ -1,11 +1,17 @@
 # CGI OS — Compliance, Governance and Integrity 🏛️
 
-> Ten registers, one screen, and four robots that **ask before they act**.
+**Live: https://cgi-os-suniljit.vercel.app** · Telegram: **@CGISUNBot**
+
+> Ten registers, one screen, and five robots that **ask before they act**.
 > Risk, compliance, audit, issues, lessons, GBPMS, CMMI, training, ESG and investigations —
 > in your pocket, with a Telegram assistant that answers from the register and never guesses.
 
 Built on the same safety core as CashFlowOS: propose → claim → execute exactly once,
 fail-closed everywhere, and a soft undo that never deletes.
+
+Pushing to `main` deploys automatically. Functions run in Singapore (`sin1`), beside the
+database. Secrets live in Vercel's **Production** environment only, so a branch preview
+builds but never reads a real record.
 
 ---
 
