@@ -9,6 +9,7 @@ import { SCHEDULED, type ProposalDraft } from '@/agents/registry'
 import { runRegulatoryWatch, watchSummary } from '@/agents/regwatch'
 import { runReport } from '@/agents/report'
 import { runSvp, svpQuietText } from '@/agents/svp'
+import { sendMail, emailShell, mailEnabled } from '@/lib/mail'
 
 // 🔒 Don't edit — this keeps your robot safe.
 // THE weekday cron — 08:30 Malaysia time (vercel.json: "30 0 * * 1-5").
@@ -78,10 +79,21 @@ export async function GET(req: Request) {
   }
   const to = recipients()
   let sent = 0
+  let mail: any = { sent: false }
   if (run('brief')) {
     const brief = buildBrief(rows, proposed, today)
     const sends = await Promise.allSettled(to.map(id => sendMessage(id, brief)))
     sent = sends.filter(r => r.status === 'fulfilled').length
+
+    // The same brief, to the people who do not live in Telegram. Management
+    // reporting sends itself; nothing addressed to an HOD ever does.
+    if (mailEnabled()) {
+      const r = await sendMail({
+        subject: `CGI OS — morning brief, ${today}`,
+        html: emailShell(`Morning brief · ${today}`, brief),
+      })
+      mail = { sent: r.ok, to: r.to.length, pilot: r.pilot, skipped: r.skipped, error: r.error }
+    }
   }
 
   // ② SWEEP the scheduled robots — CREATE proposals (🟡) or run graduated ones (🟢).
@@ -151,7 +163,7 @@ export async function GET(req: Request) {
     }
   }
 
-  return Response.json({ ok: true, today, only: only || 'all', sent, recipients: to.length, needs_yes: proposed.length, proposals_created: created, svp, watch, report })
+  return Response.json({ ok: true, today, only: only || 'all', sent, mail, recipients: to.length, needs_yes: proposed.length, proposals_created: created, svp, watch, report })
 }
 
 // ------------------------------------------------------------
