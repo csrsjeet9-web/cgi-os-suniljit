@@ -414,3 +414,61 @@ a:hover .stat { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(22,32,4
   .rv-card { border-left: none; border-top: 3px solid var(--navy); }
   .rv-fields { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   THE CROSS-FILTERING DASHBOARD (app/_components/DashboardView.tsx)
+   Every box, cell, bar and register row both shows the filter
+   and sets it. Picked things get a navy ring.
+   ============================================================ */
+
+/* ---- the lens bar ---- */
+.lens {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  background: var(--card); border: 1px solid var(--navy-tint-2); border-left: 3px solid var(--navy);
+  border-radius: var(--r-13); padding: 10px 14px; margin-bottom: 16px;
+}
+.lens-k { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); }
+.lens-n { margin-left: auto; font-size: 12.5px; color: var(--ink-faint); }
+.lens-n b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* ---- stat boxes that filter ---- */
+.stat.live {
+  display: block; width: 100%; text-align: left; font: inherit; cursor: pointer;
+  color: inherit; appearance: none;
+}
+.stat.live:hover { border-color: var(--navy); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(22,32,46,.08); }
+.stat.live:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.stat.picked { border-color: var(--navy); box-shadow: 0 0 0 2px var(--navy-tint-2); }
+.stat.picked .s { color: var(--navy-deep); font-weight: 600; }
+.stat-link { text-decoration: none; color: inherit; display: block; }
+
+/* ---- heat-map cells that drill down ---- */
+.heat-cell.live { cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; color: #fff; border: none; appearance: none; }
+.heat-cell.live:hover { filter: brightness(1.12); }
+.heat-cell.live:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.heat-cell.picked { box-shadow: inset 0 0 0 3px var(--ink); }
+
+/* ---- bars that drill down ---- */
+.bar-row.live {
+  width: 100%; font: inherit; text-align: left; background: none; border: none;
+  cursor: pointer; border-radius: var(--r-8); padding: 5px 6px; margin: 0 -6px;
+}
+.bar-row.live:hover { background: var(--paper-2); }
+.bar-row.live:focus-visible { outline: 2px solid var(--navy); outline-offset: -2px; }
+.bar-row.picked { background: var(--navy-tint); }
+.bar-row.picked .bar-label { color: var(--navy-deep); font-weight: 700; }
+
+/* ---- register rows that filter ---- */
+.reglink {
+  font: inherit; font-size: 13.5px; font-weight: 600; color: var(--navy-deep);
+  background: none; border: none; padding: 0; cursor: pointer; text-align: left;
+}
+.reglink:hover { text-decoration: underline; }
+.reglink[aria-pressed="true"] { text-decoration: underline; }
+.tbl tr.row-picked td { background: var(--navy-tint); }
+.tbl tr.row-picked td:first-child { box-shadow: inset 3px 0 0 var(--navy); }
+
+@media (max-width: 768px) {
+  .lens-n { margin-left: 0; width: 100%; }
+  .bar-row.live { margin: 0; }
+}

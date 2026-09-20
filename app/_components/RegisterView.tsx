@@ -90,7 +90,11 @@ export default function RegisterView({
 
   const urlView = asView(params.get('view'))
   const [view, setView] = useState<View>(urlView === 'all' ? initialView : urlView)
-  const [facets, setFacets] = useState<Facets>(EMPTY)
+  // ?owner=Legal arrives from the dashboard's bar chart — land with it applied.
+  const [facets, setFacets] = useState<Facets>(() => {
+    const o = params.get('owner')
+    return o ? { ...EMPTY, owner: [o] } : EMPTY
+  })
   const [q, setQ] = useState('')
   const [groupBy, setGroupBy] = useState<GroupBy>(defaultGroup)
   const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(null)
