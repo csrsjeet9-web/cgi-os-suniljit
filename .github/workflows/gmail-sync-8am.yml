@@ -1,0 +1,42 @@
+# Triggers the CGI mailbox sync + ping at 08:00 Malaysia time (00:00 UTC).
+#
+# Why this exists alongside vercel.json's cron: Vercel's Hobby plan only promises
+# "sometime within the hour" and gives no run history you can glance at. GitHub
+# Actions runs close to the minute and shows a green tick or red cross per run.
+#
+# Setup (once): repo → Settings → Secrets and variables → Actions → New repository
+# secret, named CRON_SECRET, value = the same CRON_SECRET as in Vercel.
+# Secrets are never printed in the logs, and are not visible to anyone who can
+# only read this public repo.
+name: CGI mailbox sync 8am MYT
+
+on:
+  schedule:
+    - cron: '0 0 * * *'      # 00:00 UTC = 08:00 Asia/Kuala_Lumpur
+  workflow_dispatch:          # lets you run it by hand from the Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call the sync endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET repository secret is not set — add it in Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          # -sS: quiet but still show errors. The secret goes in a header, never a URL.
+          body=$(curl -sS -m 300 -w '\n%{http_code}' \
+            -H "authorization: Bearer $CRON_SECRET" \
+            https://cgi-os-suniljit.vercel.app/api/cron-daily-gmail)
+          code=$(printf '%s' "$body" | tail -n1)
+          json=$(printf '%s' "$body" | sed '$d')
+          echo "HTTP $code"
+          # Summarise without dumping anything sensitive (there are no secrets in the body).
+          printf '%s\n' "$json" | head -c 2000
+          if [ "$code" != "200" ]; then
+            echo "::error::Gmail sync failed with HTTP $code"
+            exit 1
+          fi

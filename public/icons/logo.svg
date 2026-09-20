@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="CGI OS">
+  <rect width="96" height="96" rx="22" fill="#1E3A5F"/>
+  <!-- a shield: governance, assurance, integrity -->
+  <path d="M48 18 L72 27 V48c0 15-10 24-24 30-14-6-24-15-24-30V27z" fill="#fff" fill-opacity=".14"/>
+  <path d="M48 18 L72 27 V48c0 15-10 24-24 30-14-6-24-15-24-30V27z" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- the tick: the YES that every robot waits for -->
+  <path d="M37 47 L45 56 L61 38" fill="none" stroke="#7FB69A" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

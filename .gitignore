@@ -1,0 +1,30 @@
+/node_modules
+/.next
+/out
+/build
+next-env.d.ts
+
+# secrets — NEVER commit these
+.env
+.env*.local
+*.env
+*.key
+*.bak
+*secret*
+# but DO keep the example
+!.env.example
+
+*.tsbuildinfo
+.DS_Store
+.vercel
+
+# real data — this repo is PUBLIC. Registers live in Supabase, not in git.
+*.xlsx
+*.xlsm
+*.csv
+*.pem
+*credentials*.json
+*service-account*.json
+
+__pycache__/
+*.pyc
