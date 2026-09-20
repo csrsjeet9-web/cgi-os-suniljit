@@ -5,7 +5,7 @@
 import Link from 'next/link'
 import { getRecords, isOpen, todayISO, severityRank } from '@/lib/records'
 import { webClearance, restrictedPasscode } from '@/lib/clearance'
-import RegisterTable, { type Col } from '@/app/_components/RegisterTable'
+import RegisterView, { type Col } from '@/app/_components/RegisterView'
 import Stat from '@/app/_components/Stat'
 import Empty from '@/app/_components/Empty'
 
@@ -82,7 +82,7 @@ export default async function Investigations() {
       </div>
 
       <p className="rowlabel">The register</p>
-      {rows.length === 0 ? <Empty label="cases" /> : <RegisterTable rows={sorted} cols={cols} today={today} flagDates={false} />}
+      {rows.length === 0 ? <Empty label="cases" /> : <RegisterView rows={sorted} cols={cols} today={today} flagDates={false} />}
     </>
   )
 }

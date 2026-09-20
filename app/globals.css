@@ -269,3 +269,79 @@ a:hover .stat { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(22,32,4
 @media (prefers-reduced-motion: reduce) {
   .main > *, .bar-fill, .ms-panel { animation: none !important; }
 }
+
+/* ============================================================
+   THE INTERACTIVE REGISTER (app/_components/RegisterView.tsx)
+   Filter chips, search, sortable headers, and a row that unfolds
+   into the full record.
+   ============================================================ */
+.rv-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.rv-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
+.rv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-size: 12.5px; font-weight: 600;
+  padding: 5px 11px; border-radius: var(--r-pill);
+  background: var(--card); color: var(--ink-soft);
+  border: 1px solid var(--line-2); cursor: pointer;
+  transition: background .14s ease, color .14s ease, border-color .14s ease;
+}
+.chip:hover { border-color: var(--navy); color: var(--ink); }
+.chip.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+.chip-n { font-size: 11px; font-weight: 700; opacity: .75; font-variant-numeric: tabular-nums; }
+.chip.sev.bad.on  { background: var(--bad);  border-color: var(--bad); }
+.chip.sev.warn.on { background: var(--warn); border-color: var(--warn); }
+.chip.sev.info.on { background: var(--navy); border-color: var(--navy); }
+.chip.sev.good.on { background: var(--good); border-color: var(--good); }
+
+.rv-select, .rv-search {
+  font: inherit; font-size: 13px; color: var(--ink);
+  background: var(--card); border: 1px solid var(--line-2);
+  border-radius: var(--r-8); padding: 6px 10px;
+}
+.rv-search { min-width: 200px; }
+.rv-select:focus, .rv-search:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px var(--navy-tint); }
+
+.rv-count { font-size: 12.5px; color: var(--ink-faint); margin: 0 0 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.rv-count b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.rv-hint { margin-left: auto; font-style: italic; }
+.rv-clear { font: inherit; font-size: 12.5px; color: var(--navy-deep); background: none; border: none; padding: 0; cursor: pointer; text-decoration: underline; }
+
+/* sortable headers */
+.rv-sort {
+  font: inherit; font-size: 11.5px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase;
+  color: var(--ink-soft); background: none; border: none; padding: 0; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+}
+.rv-sort:hover { color: var(--ink); }
+.rv-sort.on { color: var(--navy-deep); }
+.rv-arrow { font-size: 9px; opacity: .5; }
+.rv-sort.on .rv-arrow { opacity: 1; }
+
+/* clickable rows */
+.rv-row { cursor: pointer; }
+.rv-row:hover td { background: var(--paper-2); }
+.rv-row:focus-visible { outline: 2px solid var(--navy); outline-offset: -2px; }
+.rv-row.on td { background: var(--navy-tint); }
+
+/* the unfolded record */
+.rv-detail td { background: var(--paper-2); padding: 0 !important; }
+.rv-card { padding: 16px 18px; border-left: 3px solid var(--navy); }
+.rv-card-title { font-size: 14px; font-weight: 700; margin: 0 0 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rv-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 22px; margin: 0; }
+.rv-fields div { min-width: 0; }
+.rv-fields dt { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 2px; }
+.rv-fields dd { font-size: 13px; color: var(--ink); margin: 0; word-break: break-word; }
+.rv-notes { font-size: 12.5px; color: var(--ink-soft); margin: 12px 0 0; font-style: italic; }
+
+@media (max-width: 768px) {
+  .rv-bar { flex-direction: column; align-items: stretch; }
+  .rv-right { margin-left: 0; }
+  .rv-search, .rv-select { width: 100%; }
+  .rv-hint { display: none; }
+  .rv-tbl thead { display: none; }
+  .rv-detail td { display: block; }
+  .rv-card { border-left: none; border-top: 3px solid var(--navy); }
+  .rv-fields { grid-template-columns: 1fr; }
+}
